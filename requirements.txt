@@ -1,0 +1,66 @@
+# Core ML and CV libraries (Required)
+ultralytics>=8.0.0          # YOLOv8 object detection - REQUIRED for both implementations
+torch>=2.0.0                # PyTorch backend for YOLO - REQUIRED
+torchvision>=0.15.0         # PyTorch vision utilities - REQUIRED
+opencv-python>=4.8.0        # Computer vision processing - REQUIRED
+Pillow>=10.0.0              # Image processing - REQUIRED
+
+# Roboflow integration (OPTIONAL - only for cloud API)
+roboflow>=1.1.0             # Roboflow API client - OPTIONAL (cloud implementation only)
+
+# OCR libraries (At least one REQUIRED)
+paddleocr>=2.7.0            # Primary OCR engine (best for license plates) - RECOMMENDED
+easyocr>=1.7.0              # Alternative OCR engine (multi-language) - OPTIONAL
+pytesseract>=0.3.10         # Tesseract OCR wrapper (fallback) - OPTIONAL
+
+# Data processing
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.10.0
+albumentations>=1.3.0
+
+# Database and caching (OPTIONAL - for production systems)
+psycopg2-binary>=2.9.0      # PostgreSQL adapter - OPTIONAL
+redis>=4.5.0                # Redis client - OPTIONAL 
+influxdb-client>=1.36.0     # InfluxDB for analytics - OPTIONAL
+sqlalchemy>=2.0.0           # SQL toolkit - OPTIONAL
+
+# API and web services (OPTIONAL - for web deployment)
+fastapi>=0.100.0            # Modern API framework - OPTIONAL
+uvicorn>=0.22.0             # ASGI server - OPTIONAL
+websockets>=11.0.0          # WebSocket support - OPTIONAL
+python-multipart>=0.0.6     # File upload support - OPTIONAL
+python-jose[cryptography]>=3.3.0  # JWT tokens - OPTIONAL
+passlib[bcrypt]>=1.7.4      # Password hashing - OPTIONAL
+
+# Configuration and utilities
+pyyaml>=6.0                 # YAML configuration files - REQUIRED
+pydantic>=2.0.0             # Data validation - OPTIONAL
+python-dotenv>=1.0.0        # Environment variables - REQUIRED for Roboflow
+click>=8.1.0                # CLI framework - OPTIONAL
+
+# Monitoring and logging
+prometheus-client>=0.17.0
+structlog>=23.0.0
+
+# Image and video processing
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.8
+ffmpeg-python>=0.2.0
+
+# Development tools
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+pre-commit>=3.3.0
+
+# Deployment (OPTIONAL - for production)
+gunicorn>=21.0.0            # WSGI server - OPTIONAL
+docker>=6.1.0               # Docker client - OPTIONAL
+
+# Minimal Installation for Offline Only:
+# pip install ultralytics opencv-python paddleocr numpy pillow pyyaml
+
+# Full Installation with Roboflow:
+# pip install -r requirements.txt

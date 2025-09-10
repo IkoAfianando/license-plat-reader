@@ -1,0 +1,22 @@
+{
+  "predictions": [
+    {
+      "x": 252,
+      "y": 62,
+      "width": 154,
+      "height": 23,
+      "confidence": 0.8452399373054504,
+      "class": "License_Plate",
+      "class_id": 0,
+      "detection_id": "7b085e6e-18a4-4b77-becf-3e14c23be782",
+      "image_path": "data/images/Cars0.png",
+      "prediction_type": "ObjectDetectionModel",
+      "ocr_text": "KLG1CA2555",
+      "ocr_confidence": []
+    }
+  ],
+  "image": {
+    "width": "500",
+    "height": "268"
+  }
+}

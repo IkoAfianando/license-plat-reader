@@ -1,0 +1,63 @@
+system:
+  name: "LPR System v1.0"
+  environment: "development"
+  debug: true
+  log_level: "INFO"
+
+detection:
+  model: "yolov8m"
+  confidence_threshold: 0.5
+  nms_threshold: 0.4
+  max_detections: 100
+  input_size: 640
+
+ocr:
+  engine: "paddleocr"
+  language: "en"
+  confidence_threshold: 0.8
+  use_angle_cls: true
+  use_space_char: true
+
+database:
+  host: "localhost"
+  port: 5432
+  name: "lpr_database"
+  username: "lpr_user"
+  password: "${DB_PASSWORD}"
+  pool_size: 10
+  max_overflow: 20
+
+redis:
+  host: "localhost"
+  port: 6379
+  db: 0
+  password: "${REDIS_PASSWORD}"
+  decode_responses: true
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  debug: false
+  cors_origins: ["*"]
+  jwt_secret: "${JWT_SECRET}"
+  jwt_expiry_hours: 24
+
+roboflow:
+  api_key: "${ROBOFLOW_API_KEY}"
+  project_id: "license-plate-recognition-rxg4e"
+  model_version: 4
+  confidence: 40
+  overlap: 30
+
+monitoring:
+  metrics_enabled: true
+  metrics_port: 9090
+  health_check_path: "/health"
+  
+alerts:
+  enabled: true
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  email_from: "${ALERT_EMAIL}"
+  email_password: "${ALERT_PASSWORD}"

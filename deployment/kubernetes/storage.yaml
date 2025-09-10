@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: lpr-data-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: lpr-storage
+  hostPath:
+    path: /mnt/lpr/data
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lpr-data-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: lpr-storage
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: lpr-models-pv
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: lpr-storage
+  hostPath:
+    path: /mnt/lpr/models
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lpr-models-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: lpr-storage
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: lpr-outputs-pv
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: lpr-storage
+  hostPath:
+    path: /mnt/lpr/outputs
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lpr-outputs-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: lpr-storage
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgres-pv
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: lpr-storage
+  hostPath:
+    path: /mnt/lpr/postgres
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: lpr-storage
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: lpr-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer

@@ -1,0 +1,104 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.cache/
+
+# C extensions
+*.so
+
+# Virtual environments and Python versions
+.venv/
+venv/
+env/
+ENV/
+.conda/
+.python-version
+
+# Packaging / build artifacts
+build/
+dist/
+downloads/
+*.egg-info/
+.eggs/
+*.egg
+pip-wheel-metadata/
+
+# Test, coverage, and tooling caches
+.pytest_cache/
+.tox/
+.mypy_cache/
+.pytype/
+.pyre/
+ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+nosetests.xml
+pytestdebug.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/
+outputs/logs/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.iml
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+database/test.db
+
+# Outputs and generated artifacts (keep readme/metadata)
+outputs/**
+!outputs/**/*.md
+!outputs/**/README
+!outputs/**/README.md
+
+# Data folders (keep readme)
+data/cache/**
+data/processed/**
+data/raw/**
+data/models/**
+data/exports/**
+!data/README.md
+
+# Models and weights
+models/**/*.pt
+models/**/*.onnx
+models/**/*.engine
+models/**/*.trt
+models/**/*.mlmodel
+models/**/*.mlmodelc
+models/model_registry.json
+models/exports/**
+!models/README.md
+
+# Ultralytics / YOLO runs and experiment logs
+runs/
+wandb/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+*.swp
+*.swo
+

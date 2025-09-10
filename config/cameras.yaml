@@ -1,0 +1,60 @@
+cameras:
+  camera_01:
+    id: "cam_01"
+    name: "Main Entrance"
+    type: "rtsp"
+    url: "rtsp://192.168.1.100:554/stream1"
+    username: "${CAM01_USER}"
+    password: "${CAM01_PASS}"
+    enabled: true
+    fps: 30
+    resolution: "1920x1080"
+    location:
+      lat: 40.7128
+      lng: -74.0060
+      address: "Main Entrance Gate"
+    
+  camera_02:
+    id: "cam_02" 
+    name: "Exit Gate"
+    type: "rtsp"
+    url: "rtsp://192.168.1.101:554/stream1"
+    username: "${CAM02_USER}"
+    password: "${CAM02_PASS}"
+    enabled: true
+    fps: 30
+    resolution: "1920x1080"
+    location:
+      lat: 40.7129
+      lng: -74.0061
+      address: "Exit Gate"
+
+  camera_03:
+    id: "cam_03"
+    name: "Parking Lot A"
+    type: "http"
+    url: "http://192.168.1.102:8080/video"
+    enabled: false
+    fps: 15
+    resolution: "1280x720"
+    location:
+      lat: 40.7130
+      lng: -74.0062
+      address: "Parking Lot A"
+
+settings:
+  detection_zone:   
+    enabled: true
+    default_zone: [0.2, 0.3, 0.8, 0.7]  
+  
+  recording:
+    enabled: true
+    duration_seconds: 10 
+    max_storage_gb: 100
+    cleanup_days: 30
+  
+  preprocessing:
+    brightness_adjustment: 0
+    contrast_adjustment: 1.0
+    noise_reduction: true
+    motion_blur_detection: true
