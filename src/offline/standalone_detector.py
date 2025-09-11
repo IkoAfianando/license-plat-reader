@@ -6,7 +6,7 @@ Suitable for air-gapped systems or environments without internet access
 
 import cv2
 import numpy as np
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Any
 from pathlib import Path
 import logging
 import time
@@ -73,17 +73,52 @@ class StandaloneLPRDetector:
             self._load_pretrained_model()
     
     def _load_pretrained_model(self):
-        """Load pretrained YOLOv8 model and adapt for license plates"""
+        """Load pretrained YOLOv8 model and adapt for license plates.
+        Preference order:
+        - Path from env `YOLO_MODEL_PATH`
+        - Local file `models/pretrained/yolov8x.pt`
+        - Local file `yolov8x.pt` (project root)
+        - Fallback to Ultralytics auto-download `yolov8x.pt`
+        """
         try:
-            # Start with YOLOv8n (fastest) for general object detection
-            self.model = YOLO('yolov8n.pt')  # Will download if not exists
-            self.model_info = {
-                'type': 'pretrained_adapted',
-                'base_model': 'yolov8n',
-                'loaded': True,
-                'note': 'Adapted from general object detection to focus on rectangular objects'
-            }
-            logger.info("Loaded pretrained YOLOv8n model (adapted for license plates)")
+            # Candidate paths
+            env_path = os.getenv('YOLO_MODEL_PATH')
+            candidates = []
+            if env_path:
+                candidates.append(env_path)
+            candidates.extend([
+                str(Path('models/pretrained/yolov8x.pt')),
+                str(Path('yolov8x.pt')),
+            ])
+
+            chosen_path: Optional[str] = None
+            for p in candidates:
+                if p and Path(p).exists():
+                    chosen_path = p
+                    break
+
+            # Load model
+            if chosen_path:
+                self.model = YOLO(chosen_path)
+                base_name = Path(chosen_path).name
+                self.model_info = {
+                    'type': 'pretrained_adapted',
+                    'base_model': base_name.replace('.pt', ''),
+                    'path': chosen_path,
+                    'loaded': True,
+                    'note': 'Using local YOLO weights'
+                }
+                logger.info(f"Loaded local pretrained model: {chosen_path}")
+            else:
+                # Fallback: rely on Ultralytics to fetch yolov8x if allowed
+                self.model = YOLO('yolov8x.pt')
+                self.model_info = {
+                    'type': 'pretrained_adapted',
+                    'base_model': 'yolov8x',
+                    'loaded': True,
+                    'note': 'Auto-downloaded by Ultralytics if not present'
+                }
+                logger.info("Loaded pretrained YOLOv8x model")
         except Exception as e:
             logger.error(f"Failed to load pretrained model: {e}")
             raise
@@ -481,7 +516,7 @@ class StandaloneLicensePlateDetector:
         # Load YOLO model (tests patch ultralytics.YOLO)
         try:
             from ultralytics import YOLO  # type: ignore
-            self.model = YOLO(model_path) if model_path else YOLO('yolov8n.pt')
+            self.model = YOLO(model_path) if model_path else YOLO('yolov8l.pt')
         except Exception:
             # In test contexts, this will be patched; if not available, use a dummy
             self.model = None

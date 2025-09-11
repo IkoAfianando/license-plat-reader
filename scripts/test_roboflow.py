@@ -11,9 +11,8 @@ import json
 import time
 import argparse
 from pathlib import Path
-import numpy as np # Diperlukan untuk konversi gambar ke format yang bisa dibaca OCR
+import numpy as np 
 
-# --- BLOK BARU: Import untuk OCR dan Gambar ---
 try:
     from PIL import Image
     print("✅ Pillow (PIL) library imported successfully")
@@ -27,10 +26,7 @@ try:
 except ImportError:
     print("❌ EasyOCR library not found. Install with: pip install easyocr")
     exit(1)
-# --- AKHIR BLOK BARU ---
 
-
-# Load environment variables from .env if present
 load_dotenv()
 
 class RoboflowTester:
@@ -40,21 +36,17 @@ class RoboflowTester:
         if not self.api_key:
             print("❌ API key required. Set ROBOFLOW_API_KEY environment variable")
             exit(1)
-        
-        # --- BARIS BARU: Inisialisasi OCR Reader ---
-        # 'en' untuk bahasa Inggris. Untuk plat Indonesia, kombinasi ini seringkali cukup baik.
-        # Anda bisa menambahkan 'id' jika perlu: ['id', 'en']
+            
         print("\n⏳ Initializing OCR engine (EasyOCR)... This may take a moment.")
         self.ocr_reader = easyocr.Reader(['en']) 
-        print("✅ OCR engine initialized.")
-        # --- AKHIR BARIS BARU ---
+        print("✅ OCR engine initialized.")    
             
         try:
             from roboflow import Roboflow
             self.rf = Roboflow(api_key=self.api_key)
-            resolved_workspace = workspace or os.getenv('ROBOFLOW_WORKSPACE', 'roboflow-universe-projects')
-            resolved_project = project_slug or os.getenv('ROBOFLOW_PROJECT', 'license-plate-recognition-rxg4e')
-            resolved_version = version or int(os.getenv('ROBOFLOW_VERSION', '4'))
+            resolved_workspace = workspace or os.getenv('ROBOFLOW_WORKSPACE', 'test-aip6t')
+            resolved_project = project_slug or os.getenv('ROBOFLOW_PROJECT', 'license-plate-recognition-8fvub-hvrra')
+            resolved_version = version or int(os.getenv('ROBOFLOW_VERSION', '2'))
 
             self.project = self.rf.workspace(resolved_workspace).project(resolved_project)
             self.model = self.project.version(resolved_version).model
@@ -72,8 +64,7 @@ class RoboflowTester:
             print(f"❌ Image not found: {image_path}")
             return None
             
-        try:
-            # --- Langkah 1: Deteksi Objek dengan Roboflow ---
+        try:            
             start_time = time.time()
             result = self.model.predict(image_path, confidence=confidence, overlap=overlap)
             inference_time = time.time() - start_time
@@ -82,16 +73,12 @@ class RoboflowTester:
             
             print(f"⏱️  Roboflow inference time: {inference_time:.3f} seconds")
             print(f"📊 Detections found: {len(detections.get('predictions', []))}")
-            
-            # --- Langkah 2: Proses OCR pada setiap deteksi ---
+                        
             if detections.get('predictions'):
-                try:
-                    # Buka gambar asli untuk di-crop
+                try:            
                     original_image = Image.open(image_path).convert("RGB")
                     
-                    for i, detection in enumerate(detections['predictions']):
-                        # Roboflow memberikan koordinat pusat (x, y). Kita perlu mengubahnya menjadi
-                        # koordinat pojok (kiri, atas, kanan, bawah) untuk cropping.
+                    for i, detection in enumerate(detections['predictions']):                    
                         x_center = detection['x']
                         y_center = detection['y']
                         width = detection['width']
@@ -102,21 +89,21 @@ class RoboflowTester:
                         right = x_center + (width / 2)
                         bottom = y_center + (height / 2)
                         
-                        # Crop gambar plat nomor
+                        
                         cropped_plate_img = original_image.crop((left, top, right, bottom))
                         
-                        # Konversi gambar PIL ke array NumPy yang bisa dibaca EasyOCR
+                        
                         cropped_plate_np = np.array(cropped_plate_img)
 
-                        # Jalankan OCR pada gambar yang sudah di-crop
+                        
                         ocr_start_time = time.time()
                         ocr_results = self.ocr_reader.readtext(cropped_plate_np)
                         ocr_inference_time = time.time() - ocr_start_time
                         
-                        # Gabungkan hasil teks OCR (jika ada) menjadi satu string
+                        
                         recognized_text = " ".join([res[1] for res in ocr_results]).strip()
                         
-                        # Tambahkan hasil OCR ke dalam dictionary deteksi
+                        
                         detection['ocr_text'] = recognized_text
                         detection['ocr_confidence'] = [res[2] for res in ocr_results] # simpan confidence per kata
 
@@ -130,7 +117,7 @@ class RoboflowTester:
                 except Exception as e:
                     print(f"❌ Failed during OCR processing: {e}")
 
-            # Simpan hasil (sekarang JSON akan berisi teks OCR)
+            
             base_name = Path(image_path).stem
             output_path = Path(output_dir) if output_dir else Path(".")
             os.makedirs(output_path, exist_ok=True)
@@ -156,44 +143,40 @@ class RoboflowTester:
             print(f"❌ Detection failed: {e}")
             return None
             
-    # Sisa fungsi lainnya (performance_benchmark, create_demo_report, dll) tidak saya ubah
-    # karena fokusnya adalah pada test_single_image.
-    # Anda bisa mengadaptasi logika OCR ke fungsi benchmark jika diperlukan.
-
-# ... (Sisa kode dari `parse_args` dan `main` bisa tetap sama) ...
-# ... (Salin semua fungsi dari script asli Anda dari sini ke bawah) ...
-
 from typing import Optional
 
 def resolve_input_dir(cli_input: Optional[str], repo_root: Path) -> str:
     """Resolve input directory from CLI/env/defaults with sensible fallbacks."""
-    # 1) CLI takes precedence
-    if cli_input:
-        return cli_input
-    # 2) Environment variable
-    env_dir = os.getenv('IMAGE_INPUT_DIR')
-    if env_dir:
-        return env_dir
-    # 3) Repo-local default (requested: data/images)
+    # Always use data/images as default, no CLI input needed
     repo_default = repo_root / "data" / "images"
     if repo_default.exists():
         return str(repo_default)
-    # 4) External dataset path (common on this machine)
+    
+    # If CLI input provided, use it as override
+    if cli_input:
+        return cli_input
+    
+    # Environment variable as fallback
+    env_dir = os.getenv('IMAGE_INPUT_DIR')
+    if env_dir:
+        return env_dir
+    
+    # External dataset path (fallback for this machine)
     external_default = Path(os.path.expanduser("~/COMPANY/ieko-media/dataset/images/in"))
     return str(external_default)
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run Roboflow license plate detection and OCR on a batch of images.")
-    parser.add_argument("--input", dest="input_dir", help="Input images directory")
+        description="Run Roboflow license plate detection and OCR on a batch of images. Automatically uses data/images/ as input directory.")
+    parser.add_argument("--input", dest="input_dir", help="Override input images directory (optional, defaults to data/images/)")
     parser.add_argument("--output", dest="output_dir", help="Output base directory (defaults to outputs/roboflow_batch_<ts>)")
-    parser.add_argument("--max", dest="max_images", type=int, default=1, help="Max number of images to process (default: 1)") # Diubah ke 1 untuk tes
+    parser.add_argument("--max", dest="max_images", type=int, default=10, help="Max number of images to process (default: 10)")
     parser.add_argument("--confidence", type=int, default=40, help="Confidence threshold (default: 40)")
     parser.add_argument("--overlap", type=int, default=30, help="Overlap threshold (default: 30)")
     parser.add_argument("--recursive", action="store_true", help="Search images recursively in input directory")
-    parser.add_argument("--workspace", dest="workspace", help="Roboflow workspace slug (default: roboflow-universe-projects or ROBOFLOW_WORKSPACE)")
-    parser.add_argument("--project", dest="project", help="Roboflow project slug (default: license-plate-recognition-rxg4e or ROBOFLOW_PROJECT)")
-    parser.add_argument("--version", dest="version", type=int, help="Roboflow version number (default: 4 or ROBOFLOW_VERSION)")
+    parser.add_argument("--workspace", dest="workspace", help="Roboflow workspace slug (default: test-aip6t or ROBOFLOW_WORKSPACE)")
+    parser.add_argument("--project", dest="project", help="Roboflow project slug (default: license-plate-recognition-8fvub-hvrra or ROBOFLOW_PROJECT)")
+    parser.add_argument("--version", dest="version", type=int, help="Roboflow version number (default: 2 or ROBOFLOW_VERSION)")
     return parser.parse_args()
 
 def main():
@@ -209,8 +192,8 @@ def main():
         version=args.version,
     )
 
-    # Sisa logika main tetap sama, hanya pastikan direktori input dan output benar
-    repo_root = Path(__file__).resolve().parent
+    # Update paths to use project root instead of script directory
+    repo_root = Path(__file__).resolve().parent.parent  # Go up one level from scripts/ to project root
     input_dir = resolve_input_dir(args.input_dir, repo_root)
     timestamp = time.strftime('%Y%m%d_%H%M%S')
     if args.output_dir:
@@ -228,7 +211,7 @@ def main():
     if input_path.is_dir():
         for pat in patterns:
             test_images.extend(sorted(str(p) for p in searcher(pat)))
-    elif input_path.is_file(): # Tambahan: Handle jika input adalah file tunggal
+    elif input_path.is_file():
         test_images = [str(input_path)]
     else:
         print(f"⚠️  Input path not found: {input_dir}")
@@ -255,8 +238,7 @@ def main():
         )
         if result:
             results.append(result)
-    
-    # ... Sisa fungsi main bisa di-skip untuk tes tunggal ini ...
+        
     if results:
         print(f"\n✅ Testing complete! Review results in {output_images_dir}")
     else:

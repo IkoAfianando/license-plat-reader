@@ -57,12 +57,34 @@ class OCREngine:
         """Initialize the specified OCR engine"""
         try:
             if engine == 'paddleocr' and PADDLE_AVAILABLE:
-                self.ocr_engine = PaddleOCR(
-                    use_angle_cls=True,
-                    lang=self.language,
-                    show_log=False
-                )
-                logger.info("PaddleOCR initialized")
+                # Try to initialize PaddleOCR with different parameter combinations
+                # to handle API changes in different versions
+                try:
+                    self.ocr_engine = PaddleOCR(
+                        use_angle_cls=True,
+                        lang=self.language,
+                        show_log=False
+                    )
+                    logger.info("PaddleOCR initialized with show_log parameter")
+                except ValueError as e:
+                    if "show_log" in str(e):
+                        # Try without show_log parameter (for newer versions)
+                        try:
+                            self.ocr_engine = PaddleOCR(
+                                use_angle_cls=True,
+                                lang=self.language
+                            )
+                            logger.info("PaddleOCR initialized without show_log parameter")
+                        except Exception as e2:
+                            # Try with minimal parameters
+                            try:
+                                self.ocr_engine = PaddleOCR()
+                                logger.info("PaddleOCR initialized with default parameters")
+                            except Exception as e3:
+                                logger.error(f"Failed to initialize PaddleOCR: {e3}")
+                                raise e3
+                    else:
+                        raise e
                 
             elif engine == 'easyocr' and EASY_AVAILABLE:
                 self.ocr_engine = easyocr.Reader([self.language])
@@ -128,7 +150,12 @@ class OCREngine:
     def _extract_paddleocr(self, image: np.ndarray) -> Dict:
         """Extract text using PaddleOCR"""
         try:
-            results = self.ocr_engine.ocr(image, cls=True)
+            # Try with cls parameter first, fallback without it
+            try:
+                results = self.ocr_engine.ocr(image, cls=True)
+            except TypeError:
+                # Fallback for newer PaddleOCR versions that don't support 'cls' parameter
+                results = self.ocr_engine.ocr(image)
             
             if not results or not results[0]:
                 return {'text': '', 'confidence': 0.0, 'engine': 'paddleocr'}

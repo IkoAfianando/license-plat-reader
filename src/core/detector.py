@@ -64,11 +64,15 @@ class LicensePlateDetector:
         """Load Roboflow model"""
         try:
             rf = Roboflow(api_key=config['api_key'])
-            project = rf.workspace().project(config['project_id'])
-            self.roboflow_model = project.version(config['model_version']).model
+            workspace_name = config.get('workspace', 'test-aip6t')
+            project_id = config.get('project_id', 'license-plate-recognition-8fvub-hvrra')
+            model_version = config.get('model_version', 2)
+            
+            project = rf.workspace(workspace_name).project(project_id)
+            self.roboflow_model = project.version(model_version).model
             self.roboflow_confidence = config.get('confidence', 40)
             self.roboflow_overlap = config.get('overlap', 30)
-            logger.info(f"Loaded Roboflow model: {config['project_id']}")
+            logger.info(f"Loaded Roboflow model: {workspace_name}/{project_id}/v{model_version}")
         except Exception as e:
             logger.error(f"Failed to load Roboflow model: {e}")
             # Continue without Roboflow model

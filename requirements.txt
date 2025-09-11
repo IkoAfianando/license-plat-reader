@@ -24,6 +24,7 @@ psycopg2-binary>=2.9.0      # PostgreSQL adapter - OPTIONAL
 redis>=4.5.0                # Redis client - OPTIONAL 
 influxdb-client>=1.36.0     # InfluxDB for analytics - OPTIONAL
 sqlalchemy>=2.0.0           # SQL toolkit - OPTIONAL
+geoalchemy2>=0.14.0         # Geographic extensions for SQLAlchemy - OPTIONAL
 
 # API and web services (OPTIONAL - for web deployment)
 fastapi>=0.100.0            # Modern API framework - OPTIONAL
@@ -32,32 +33,44 @@ websockets>=11.0.0          # WebSocket support - OPTIONAL
 python-multipart>=0.0.6     # File upload support - OPTIONAL
 python-jose[cryptography]>=3.3.0  # JWT tokens - OPTIONAL
 passlib[bcrypt]>=1.7.4      # Password hashing - OPTIONAL
+httpx>=0.24.0               # Async HTTP client for testing - OPTIONAL
+aiohttp>=3.8.0              # Alternative async HTTP client - OPTIONAL
 
 # Configuration and utilities
 pyyaml>=6.0                 # YAML configuration files - REQUIRED
 pydantic>=2.0.0             # Data validation - OPTIONAL
 python-dotenv>=1.0.0        # Environment variables - REQUIRED for Roboflow
 click>=8.1.0                # CLI framework - OPTIONAL
+requests>=2.31.0            # HTTP client library - REQUIRED for API calls
 
 # Monitoring and logging
 prometheus-client>=0.17.0
 structlog>=23.0.0
+psutil>=5.9.0              # System and process monitoring - REQUIRED for metrics
 
 # Image and video processing
 imageio>=2.31.0
 imageio-ffmpeg>=0.4.8
 ffmpeg-python>=0.2.0
 
+# Additional missing dependencies based on codebase analysis
+matplotlib>=3.7.0              # For plotting and visualization (used in some scripts)
+seaborn>=0.12.0                # Statistical plotting (optional, for advanced analytics)
+
 # Development tools
 pytest>=7.4.0
+pytest-asyncio>=0.21.0     # Async testing support - REQUIRED for API tests
 black>=23.0.0
 flake8>=6.0.0
 mypy>=1.5.0
 pre-commit>=3.3.0
 
+# Additional dependencies found in codebase
+# Note: argparse, datetime, base64, io, typing are built-in modules
+
 # Deployment (OPTIONAL - for production)
-gunicorn>=21.0.0            # WSGI server - OPTIONAL
-docker>=6.1.0               # Docker client - OPTIONAL
+gunicorn>=21.0.0               # WSGI server - OPTIONAL
+docker>=6.1.0                  # Docker client - OPTIONAL
 
 # Minimal Installation for Offline Only:
 # pip install ultralytics opencv-python paddleocr numpy pillow pyyaml

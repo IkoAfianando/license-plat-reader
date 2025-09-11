@@ -12,11 +12,15 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, BackgroundTasks, WebSocket, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+# from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials  # JWT disabled
 from fastapi.responses import JSONResponse, FileResponse
 import uvicorn
 
@@ -24,7 +28,7 @@ try:
     import cv2
     import numpy as np
     from PIL import Image
-    import jwt
+    # import jwt  # JWT disabled
     DEPENDENCIES_AVAILABLE = True
 except ImportError:
     DEPENDENCIES_AVAILABLE = False
@@ -48,8 +52,10 @@ except ImportError as e:
 try:
     from src.core.detector import LicensePlateDetector
     ROBOFLOW_AVAILABLE = True
-except ImportError:
+    print("✅ Roboflow import OK")
+except ImportError as e:
     ROBOFLOW_AVAILABLE = False
+    print(f"❌ Roboflow import failed: {e}")
 
 # Pydantic models for request/response validation
 from pydantic import BaseModel, Field
@@ -125,25 +131,56 @@ class LPRAPIServer:
             
         print("🚀 Initializing LPR API components...")
         
-        # Initialize detectors
-        self.offline_detector = StandaloneLPRDetector(confidence=0.5)
+        # Initialize detectors (force CPU mode)
+        # Prefer explicit model path via env/config when available
+        yolo_model_path = os.getenv('YOLO_MODEL_PATH')
+        if not yolo_model_path:
+            # Also support selecting by name via DEFAULT_YOLO_MODEL (e.g., 'yolov8x.pt')
+            default_model_name = os.getenv('DEFAULT_YOLO_MODEL', '').strip()
+            if default_model_name:
+                # Search common locations
+                candidates = [
+                    default_model_name,
+                    str(Path('models/pretrained') / default_model_name)
+                ]
+                for p in candidates:
+                    if Path(p).exists():
+                        yolo_model_path = p
+                        break
+
+        self.offline_detector = StandaloneLPRDetector(
+            model_path=yolo_model_path if yolo_model_path else None,
+            confidence=0.5,
+            device='cpu'
+        )
         print("✅ Offline detector initialized")
         
         self.roboflow_detector = None
+        print(f"🔍 Debug: ROBOFLOW_AVAILABLE = {ROBOFLOW_AVAILABLE}")
+        print(f"🔍 Debug: ROBOFLOW_API_KEY = {bool(os.getenv('ROBOFLOW_API_KEY'))}")
+        
         if ROBOFLOW_AVAILABLE and os.getenv('ROBOFLOW_API_KEY'):
             try:
                 roboflow_config = {
                     'api_key': os.getenv('ROBOFLOW_API_KEY'),
-                    'project_id': 'license-plate-recognition-rxg4e',
-                    'model_version': 4
+                    'workspace': os.getenv('ROBOFLOW_WORKSPACE', 'test-aip6t'),
+                    'project_id': os.getenv('ROBOFLOW_PROJECT', 'license-plate-recognition-8fvub-hvrra'),
+                    'model_version': int(os.getenv('ROBOFLOW_VERSION', '2')),
+                    'confidence': int(os.getenv('ROBOFLOW_CONFIDENCE', '40')),
+                    'overlap': int(os.getenv('ROBOFLOW_OVERLAP', '30'))
                 }
+                print(f"🔍 Debug: Roboflow config = {roboflow_config}")
                 self.roboflow_detector = LicensePlateDetector(roboflow_config=roboflow_config)
                 print("✅ Roboflow detector initialized")
             except Exception as e:
                 print(f"⚠️  Roboflow detector failed: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            print("❌ Roboflow detector skipped - requirements not met")
         
-        # Initialize OCR engine
-        self.ocr_engine = OCREngine(engine='paddleocr')
+        # Initialize OCR engine (use EasyOCR for better compatibility)
+        self.ocr_engine = OCREngine(engine='easyocr')
         print("✅ OCR engine initialized")
         
         # Initialize monitoring
@@ -224,47 +261,52 @@ class LPRAPIServer:
                 services=services_status
             )
         
-        # Authentication endpoints
-        @self.app.post("/auth/login")
-        async def login(username: str = Form(...), password: str = Form(...)):
-            """Authenticate user and return JWT token"""
-            # Simple authentication - replace with proper auth in production
-            if username == "admin" and password == os.getenv("ADMIN_PASSWORD", "admin123"):
-                payload = {
-                    "username": username,
-                    "exp": datetime.utcnow() + timedelta(hours=self.config['jwt_expiry_hours'])
-                }
-                token = jwt.encode(payload, self.config['jwt_secret'], algorithm="HS256")
-                
-                return {
-                    "access_token": token,
-                    "token_type": "bearer",
-                    "expires_in": self.config['jwt_expiry_hours'] * 3600
-                }
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid credentials"
-                )
+        # JWT Authentication disabled for testing
+        # @self.app.post("/auth/login")
+        # async def login(username: str = Form(...), password: str = Form(...)):
+        #     """Authenticate user and return JWT token"""
+        #     # Simple authentication - replace with proper auth in production
+        #     if username == "admin" and password == os.getenv("ADMIN_PASSWORD", "admin123"):
+        #         payload = {
+        #             "username": username,
+        #             "exp": datetime.utcnow() + timedelta(hours=self.config['jwt_expiry_hours'])
+        #         }
+        #         token = jwt.encode(payload, self.config['jwt_secret'], algorithm="HS256")
+        #         
+        #         return {
+        #             "access_token": token,
+        #             "token_type": "bearer",
+        #             "expires_in": self.config['jwt_expiry_hours'] * 3600
+        #         }
+        #     else:
+        #         raise HTTPException(
+        #             status_code=status.HTTP_401_UNAUTHORIZED,
+        #             detail="Invalid credentials"
+        #         )
         
-        # Authentication dependency
-        security = HTTPBearer()
+        # Authentication dependency - DISABLED
+        # security = HTTPBearer()
         
-        def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-            """Verify JWT token"""
-            try:
-                payload = jwt.decode(credentials.credentials, self.config['jwt_secret'], algorithms=["HS256"])
-                return payload.get("username")
-            except jwt.ExpiredSignatureError:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Token expired"
-                )
-            except jwt.JWTError:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token"
-                )
+        # def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+        #     """Verify JWT token"""
+        #     try:
+        #         payload = jwt.decode(credentials.credentials, self.config['jwt_secret'], algorithms=["HS256"])
+        #         return payload.get("username")
+        #     except jwt.ExpiredSignatureError:
+        #         raise HTTPException(
+        #             status_code=status.HTTP_401_UNAUTHORIZED,
+        #             detail="Token expired"
+        #         )
+        #     except jwt.JWTError:
+        #         raise HTTPException(
+        #             status_code=status.HTTP_401_UNAUTHORIZED,
+        #             detail="Invalid token"
+        #         )
+        
+        # Mock verify function for no auth
+        def verify_token():
+            """Mock verify function - no authentication required"""
+            return "test_user"
         
         # Detection endpoints
         @self.app.post("/detect/image", response_model=DetectionResponse)
@@ -274,7 +316,7 @@ class LPRAPIServer:
             use_roboflow: bool = Form(True),
             extract_text: bool = Form(True),
             return_image: bool = Form(False),
-            current_user: str = Depends(verify_token)
+            # current_user: str = Depends(verify_token)  # Auth disabled
         ):
             """Detect license plates in uploaded image"""
             
@@ -325,14 +367,39 @@ class LPRAPIServer:
                 texts = []
                 if extract_text and detections:
                     if model_used == "roboflow":
-                        # For roboflow, need to extract plate regions
-                        plate_regions = []  # This would need implementation
+                        # Extract plate regions from Roboflow detections
+                        from PIL import Image
+                        pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+                        plate_regions = []
+                        
+                        for detection in detections:
+                            # Convert Roboflow center coordinates to crop coordinates
+                            x_center = detection['bbox'][0] + detection['bbox'][2] / 2
+                            y_center = detection['bbox'][1] + detection['bbox'][3] / 2
+                            width = detection['bbox'][2] 
+                            height = detection['bbox'][3]
+                            
+                            left = x_center - (width / 2)
+                            top = y_center - (height / 2)
+                            right = x_center + (width / 2)
+                            bottom = y_center + (height / 2)
+                            
+                            # Crop plate region
+                            cropped = pil_image.crop((left, top, right, bottom))
+                            plate_regions.append(np.array(cropped))
                     else:
                         plate_regions = self.offline_detector.extract_plate_regions(image, detections)
                     
-                    for plate_data in plate_regions:
-                        ocr_result = self.ocr_engine.extract_text(plate_data['image'])
-                        texts.append(ocr_result)
+                    if model_used == "roboflow":
+                        # For Roboflow, plate_regions are direct numpy arrays
+                        for plate_image in plate_regions:
+                            ocr_result = self.ocr_engine.extract_text(plate_image)
+                            texts.append(ocr_result)
+                    else:
+                        # For offline detector, plate_regions have 'image' key
+                        for plate_data in plate_regions:
+                            ocr_result = self.ocr_engine.extract_text(plate_data['image'])
+                            texts.append(ocr_result)
                 
                 # Add text results to detections
                 for i, detection in enumerate(detections):
@@ -392,7 +459,7 @@ class LPRAPIServer:
             confidence: float = Form(0.5),
             use_roboflow: bool = Form(True),
             extract_text: bool = Form(True),
-            current_user: str = Depends(verify_token)
+            # current_user: str = Depends(verify_token)  # Auth disabled
         ):
             """Process multiple images in batch"""
             
@@ -467,7 +534,7 @@ class LPRAPIServer:
             frame_skip: int = Form(1),
             max_frames: Optional[int] = Form(None),
             confidence: float = Form(0.5),
-            current_user: str = Depends(verify_token)
+            # current_user: str = Depends(verify_token)  # Auth disabled
         ):
             """Process video file for license plate detection"""
             
@@ -517,7 +584,7 @@ class LPRAPIServer:
         @self.app.get("/detect/video/{job_id}/status")
         async def get_video_status(
             job_id: str,
-            current_user: str = Depends(verify_token)
+            # current_user: str = Depends(verify_token)  # Auth disabled
         ):
             """Get video processing job status"""
             
@@ -539,7 +606,7 @@ class LPRAPIServer:
         
         # Data management endpoints
         @self.app.get("/data/datasets")
-        async def list_datasets(current_user: str = Depends(verify_token)):
+        async def list_datasets():  # Auth disabled
             """Get list of available datasets"""
             stats = self.data_manager.get_dataset_statistics()
             
@@ -562,7 +629,7 @@ class LPRAPIServer:
             files: List[UploadFile] = File(...),
             dataset_name: str = Form(...),
             source: str = Form("api_upload"),
-            current_user: str = Depends(verify_token)
+            # current_user: str = Depends(verify_token)  # Auth disabled
         ):
             """Upload images to create or extend a dataset"""
             
@@ -604,7 +671,7 @@ class LPRAPIServer:
         
         # Model management endpoints
         @self.app.get("/models")
-        async def list_models(current_user: str = Depends(verify_token)):
+        async def list_models():  # Auth disabled
             """Get list of available models"""
             models = self.model_manager.list_models()
             
@@ -625,7 +692,7 @@ class LPRAPIServer:
         async def get_stats(
             start_date: Optional[str] = None,
             end_date: Optional[str] = None,
-            current_user: str = Depends(verify_token)
+            # current_user: str = Depends(verify_token)  # Auth disabled
         ):
             """Get detection statistics and analytics"""
             
@@ -651,7 +718,7 @@ class LPRAPIServer:
         
         # Configuration endpoints
         @self.app.get("/config")
-        async def get_config(current_user: str = Depends(verify_token)):
+        async def get_config():  # Auth disabled
             """Get current system configuration"""
             return {
                 "detection": {

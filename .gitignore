@@ -102,3 +102,4 @@ wandb/
 *.swp
 *.swo
 
+yolov8x.pt
