@@ -1,0 +1,151 @@
+@startuml
+!theme blueprint
+title License Plate Reader System v3 - Production Web Interface
+
+' ----- Color tokens (tanpa #) -----
+!define PRIMARY_COLOR 2563eb
+!define SECONDARY_COLOR 10b981
+!define ACCENT_COLOR f59e0b
+!define ERROR_COLOR ef4444
+
+' ===== Client Layer =====
+package "Mobile Devices" as mobile_devices #white {
+  rectangle "📱 iOS Safari" as ios
+  rectangle "📱 Android Chrome" as android
+  rectangle "💻 Desktop Browser" as desktop
+}
+
+' ===== Internet Layer =====
+cloud "🌐 Internet" as internet {
+  rectangle "Ngrok Tunnel" as ngrok #ACCENT_COLOR
+  note right of ngrok
+    https://xxxx.ngrok-free.app
+  end note
+}
+
+' ===== Web Application Layer =====
+package "Web Application Stack" as web_stack #PRIMARY_COLOR {
+  package "Next.js 15 Frontend" as nextjs {
+    rectangle "📸 CameraCapture.tsx" as camera_component
+    rectangle "📁 FileUpload.tsx" as upload_component
+    rectangle "🔄 Tab Navigation" as tab_navigation
+  }
+
+  package "API Routes" as api_routes {
+    rectangle "/api/detect" as detect_api
+    rectangle "/api/health" as health_api
+  }
+}
+
+' ===== Processing Layer =====
+package "FastAPI Backend Server" as fastapi_server #SECONDARY_COLOR {
+  package "Detection Engine" as detection_engine {
+    rectangle "🔥 YOLO Local" as yolo_local
+    rectangle "☁️ Roboflow API" as roboflow_api
+  }
+
+  package "OCR Engine" as ocr_engine {
+    rectangle "PaddleOCR" as paddleocr
+  }
+
+  rectangle "Response Handler" as response_handler
+}
+
+' ===== Data Layer =====
+package "Data Processing" as data_processing {
+  package "Image Processing" as image_proc {
+    rectangle "Base64 → Blob" as base64_conversion
+    rectangle "FormData Creation" as formdata_creation
+    rectangle "Validation" as validation
+  }
+
+  package "Results Processing" as results_proc {
+    rectangle "Bounding Boxes" as bbox
+    rectangle "Confidence Scores" as confidence
+    rectangle "OCR Text" as ocr_text
+  }
+}
+
+' ===== External Services =====
+cloud "External APIs" as external_apis {
+  rectangle "Roboflow Universe" as roboflow_universe #ACCENT_COLOR
+}
+
+' ===== CCTV Integration (Future) =====
+package "🔄 Future CCTV Integration" as cctv_integration #ERROR_COLOR {
+  rectangle "RTSP Streams" as rtsp_streams
+  rectangle "Multi-camera Dashboard" as multi_dashboard
+  rectangle "Alert System" as alert_system
+  rectangle "Database Storage" as db_storage
+}
+
+' ===== Relationships =====
+mobile_devices --> internet : HTTPS Requests
+internet --> web_stack : Proxy to localhost:3000
+web_stack --> fastapi_server : Internal API Calls\n(localhost:8000)
+
+' Web App Internal Flow
+camera_component --> base64_conversion : Webcam Screenshot
+upload_component --> formdata_creation : File Selection
+tab_navigation --> camera_component
+tab_navigation --> upload_component
+
+base64_conversion --> formdata_creation
+formdata_creation --> validation
+validation --> detect_api : POST /api/detect
+
+detect_api --> detection_engine : Forward Request
+health_api --> response_handler : Health Check
+
+' Detection Flow
+detection_engine --> yolo_local : Local Processing
+detection_engine --> roboflow_api : Cloud Processing
+roboflow_api --> roboflow_universe : API Call
+
+yolo_local --> ocr_engine
+roboflow_api --> ocr_engine
+ocr_engine --> paddleocr
+
+paddleocr --> response_handler
+response_handler --> results_proc
+
+results_proc --> bbox
+results_proc --> confidence
+results_proc --> ocr_text
+
+' Future CCTV Integration
+web_stack ..> cctv_integration : Evolution Path
+rtsp_streams ..> detection_engine : Replace Mobile Camera
+multi_dashboard ..> tab_navigation : Extend Interface
+alert_system ..> response_handler : Real-time Alerts
+db_storage ..> results_proc : Persistent Storage
+
+' ===== Notes =====
+note bottom of web_stack
+  **Production Features:**
+  • Mobile PWA Support
+  • Real-time Camera Access
+  • Live CCTV Mode (2s intervals)
+  • Fallback Error Handling
+  • Debug Mode with Full Logging
+  • TypeScript + Tailwind CSS
+end note
+
+note bottom of fastapi_server
+  **Backend Capabilities:**
+  • Dual Detection Models
+  • CPU-only Mode Support
+  • 30s Timeout Handling
+  • Comprehensive Logging
+  • Swagger Documentation
+end note
+
+note bottom of cctv_integration
+  **Ready for Production CCTV:**
+  • Replace mobile camera with RTSP streams
+  • Extend live mode to multiple cameras
+  • Add database integration
+  • Implement alert notifications
+  • Scale for 24/7 operation
+end note
+@enduml

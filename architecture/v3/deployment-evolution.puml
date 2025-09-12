@@ -1,0 +1,165 @@
+@startuml License Plate Reader Deployment v3
+!theme blueprint
+title LPR System Deployment v3: Mobile Prototype → Production CCTV
+
+!define CURRENT_COLOR #10b981
+!define FUTURE_COLOR #3b82f6
+!define MIGRATION_COLOR #f59e0b
+
+' Current Mobile Implementation
+package "🏃‍♂️ Current Deployment (September 12, 2025)" as current_impl <<CURRENT_COLOR>> {
+    
+    node "💻 Development Server" as dev_server {
+        component "Next.js Dev\n:3000" as nextjs_dev
+        component "FastAPI Server\n:8000" as fastapi_current
+        component "Ngrok Tunnel" as ngrok_current
+    }
+    
+    cloud "📱 Mobile Testing" as mobile_testing {
+        component "iOS Safari" as ios_current
+        component "Android Chrome" as android_current
+    }
+    
+    storage "🧠 Models" as models_current {
+        artifact "yolov8x.pt" as yolo_model
+        artifact "PaddleOCR" as paddle_model
+    }
+}
+
+' Migration Phase
+package "🔄 Migration Deployment (Next Sprint)" as migration_phase <<MIGRATION_COLOR>> {
+    
+    node "🖥️ Production Server" as prod_server {
+        component "Next.js Build\n:3000" as nextjs_prod
+        component "FastAPI Production\n:8000" as fastapi_prod
+        component "Nginx Reverse Proxy\n:80/443" as nginx_proxy
+    }
+    
+    node "🎥 RTSP Integration" as rtsp_integration {
+        component "IP Camera Handler" as ip_camera_handler
+        component "Stream Multiplexer" as stream_mux
+        component "Frame Extractor" as frame_extractor
+    }
+    
+    database "🗄️ Database Layer" as db_layer {
+        component "PostgreSQL\nMain DB" as postgres
+        component "Redis Cache\nReal-time" as redis
+        component "InfluxDB\nTime-series" as influx
+    }
+}
+
+' Future CCTV Production
+package "🏭 Production CCTV Deployment (Future)" as production_cctv <<FUTURE_COLOR>> {
+    
+    node "🎛️ Control Center" as control_center {
+        component "Multi-Camera Dashboard" as dashboard
+        component "Alert Management" as alert_mgmt
+        component "User Management" as user_mgmt
+        component "Analytics Engine" as analytics
+    }
+    
+    node "📡 Camera Network" as camera_network {
+        component "IP Camera 1\nEntrance" as cam1
+        component "IP Camera 2\nExit" as cam2  
+        component "IP Camera 3\nParking" as cam3
+        component "IP Camera N\n..." as camN
+    }
+    
+    node "⚡ High-Performance Processing" as hp_processing {
+        component "GPU Cluster\nYOLO Inference" as gpu_cluster
+        component "Load Balancer\nRequest Distribution" as load_balancer
+        component "Queue Manager\nAsyncio Tasks" as queue_mgr
+    }
+    
+    storage "📊 Data Storage" as data_storage {
+        artifact "Detected Plates\nHistory" as plates_history
+        artifact "Vehicle Images\nArchive" as images_archive
+        artifact "Analytics Data\nReports" as analytics_data
+    }
+}
+
+' Deployment Arrows
+current_impl -down-> migration_phase : "🚀 Phase 1\nProduction Setup"
+migration_phase -down-> production_cctv : "🏭 Phase 2\nScale to CCTV"
+
+' Current System Details
+nextjs_dev --> fastapi_current : "API Calls"
+fastapi_current --> yolo_model : "Local Inference"
+fastapi_current --> paddle_model : "OCR Processing"
+ngrok_current --> nextjs_dev : "Public Access"
+mobile_testing --> ngrok_current : "HTTPS"
+
+' Migration Connections  
+nextjs_prod --> fastapi_prod : "Internal API"
+nginx_proxy --> nextjs_prod : "Reverse Proxy"
+ip_camera_handler --> stream_mux : "RTSP Streams"
+frame_extractor --> fastapi_prod : "Frame Processing"
+fastapi_prod --> postgres : "Store Results"
+fastapi_prod --> redis : "Cache Layer"
+analytics --> influx : "Metrics Data"
+
+' Production Connections
+dashboard --> alert_mgmt : "Real-time Updates"
+cam1 --> load_balancer : "RTSP Stream"
+cam2 --> load_balancer : "RTSP Stream" 
+cam3 --> load_balancer : "RTSP Stream"
+camN --> load_balancer : "RTSP Stream"
+load_balancer --> gpu_cluster : "Distribute Load"
+queue_mgr --> gpu_cluster : "Process Queue"
+gpu_cluster --> plates_history : "Store Detections"
+analytics --> analytics_data : "Generate Reports"
+
+' Implementation Notes
+note top of current_impl
+  **✅ CURRENT DEPLOYMENT:**
+  • Mobile web interface
+  • Real-time camera capture
+  • YOLO + Roboflow detection
+  • OCR text extraction
+  • Live CCTV mode prototype
+  • Comprehensive error handling
+end note
+
+note top of migration_phase
+  **🔄 NEXT DEPLOYMENT:**
+  • Production deployment setup
+  • Replace mobile camera with RTSP
+  • Database integration
+  • Multi-camera support
+  • Performance optimization
+end note
+
+note top of production_cctv
+  **🏭 FULL PRODUCTION DEPLOYMENT:**
+  • 24/7 operation capability
+  • Multi-camera dashboard
+  • Real-time alerting system
+  • Advanced analytics
+  • User access control
+  • Scalable architecture
+end note
+
+' Technical Specifications
+note bottom of current_impl
+  **Current Tech Stack:**
+  • Next.js 15 + TypeScript
+  • FastAPI with Swagger docs  
+  • YOLOv8x.pt (CPU-only)
+  • PaddleOCR engine
+  • Ngrok for external access
+  • 85%+ detection accuracy
+  • <2 second response time
+end note
+
+note bottom of production_cctv
+  **Production Requirements:**
+  • 99.9% uptime
+  • <500ms detection time
+  • Support 50+ cameras
+  • 10,000+ plates/day capacity
+  • Real-time alerting (<1s)
+  • Full audit trail
+  • Scalable to multiple sites
+end note
+
+@enduml

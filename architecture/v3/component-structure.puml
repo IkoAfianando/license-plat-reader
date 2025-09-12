@@ -1,0 +1,201 @@
+@startuml Web Application Component Structure v3
+!theme blueprint
+title License Plate Reader Web App - Component Architecture
+
+!define COMPONENT_COLOR #3b82f6
+!define API_COLOR #10b981  
+!define UTIL_COLOR #f59e0b
+!define CONFIG_COLOR #8b5cf6
+
+' Frontend Layer
+package "⚛️ Next.js Frontend" as frontend <<COMPONENT_COLOR>> {
+    
+    component "📄 app/page.tsx" as main_page {
+        rectangle "Tab Navigation State" as tab_state
+        rectangle "Camera | Upload Toggle" as tab_toggle
+    }
+    
+    package "🧩 Components" as components {
+        component "📸 CameraCapture.tsx" as camera_capture {
+            rectangle "Webcam Integration" as webcam_ref
+            rectangle "Base64 → Blob Conversion" as blob_conversion
+            rectangle "Live CCTV Mode" as live_mode
+            rectangle "Error Handling + Fallback" as error_handling
+        }
+        
+        component "📁 FileUpload.tsx" as file_upload {
+            rectangle "File Selection UI" as file_selection
+            rectangle "Debug Information Display" as debug_display
+            rectangle "FormData Validation" as form_validation
+            rectangle "API Testing Interface" as api_testing
+        }
+    }
+    
+    package "🔌 API Routes" as api_routes <<API_COLOR>> {
+        component "/api/detect/route.ts" as detect_route {
+            rectangle "FormData Proxy" as form_proxy
+            rectangle "Request Forwarding" as request_forward
+            rectangle "Error Response Handling" as error_response
+        }
+        
+        component "/api/health/route.ts" as health_route {
+            rectangle "FastAPI Health Check" as health_check
+            rectangle "System Status Report" as status_report
+        }
+    }
+    
+    package "🎨 UI Styles" as styles <<UTIL_COLOR>> {
+        component "globals.css" as global_styles
+        component "Tailwind Configuration" as tailwind_config
+        component "Component Styles" as component_styles
+    }
+}
+
+' Configuration Layer
+package "⚙️ Configuration" as config <<CONFIG_COLOR>> {
+    component "next.config.ts" as next_config {
+        rectangle "API Proxy Setup" as proxy_setup
+        rectangle "PWA Configuration" as pwa_config
+        rectangle "Mobile Headers" as mobile_headers
+    }
+    
+    component ".env.local" as env_config {
+        rectangle "LPR_API_URL=localhost:8000" as api_url
+        rectangle "NODE_ENV=development" as node_env
+    }
+    
+    component "package.json" as package_config {
+        rectangle "Dependencies" as dependencies
+        rectangle "Scripts" as npm_scripts
+    }
+    
+    component ".eslintrc.js" as eslint_config {
+        rectangle "TypeScript Rules" as ts_rules
+        rectangle "Warning Overrides" as warning_overrides
+    }
+}
+
+' Backend Integration
+package "🚀 FastAPI Backend" as backend {
+    component "Detection Engine" as detection_engine
+    component "OCR Processing" as ocr_processing  
+    component "Response Formatting" as response_formatting
+}
+
+' External Services
+cloud "☁️ External APIs" as external_apis {
+    component "Roboflow Universe" as roboflow_api
+}
+
+' Deployment
+package "🌐 Deployment" as deployment {
+    component "start-mobile.sh" as mobile_script {
+        rectangle "Next.js Dev Server" as nextjs_dev
+        rectangle "Ngrok Tunnel Setup" as ngrok_setup
+        rectangle "Health Checks" as health_checks
+    }
+}
+
+' Component Relationships
+main_page --> tab_state
+tab_state --> camera_capture
+tab_state --> file_upload
+
+camera_capture --> webcam_ref : "Real-time Video"
+camera_capture --> blob_conversion : "Screenshot Processing"
+camera_capture --> live_mode : "Continuous Detection"
+camera_capture --> error_handling : "Fallback Logic"
+
+file_upload --> file_selection : "Image Upload"
+file_upload --> debug_display : "Debug Information"
+file_upload --> form_validation : "Data Validation"
+file_upload --> api_testing : "Endpoint Testing"
+
+camera_capture --> detect_route : "POST /api/detect"
+file_upload --> detect_route : "POST /api/detect"
+detect_route --> form_proxy : "FormData Processing"
+form_proxy --> request_forward : "Backend Call"
+
+health_route --> health_check : "Server Status"
+health_check --> status_report : "JSON Response"
+
+next_config --> proxy_setup : "API Routing"
+next_config --> pwa_config : "Mobile Support"
+next_config --> mobile_headers : "Camera Permissions"
+
+env_config --> api_url : "Backend URL"
+detect_route --> api_url : "Environment Variable"
+
+mobile_script --> nextjs_dev : "Start Development"
+mobile_script --> ngrok_setup : "Public Access"
+mobile_script --> health_checks : "Validate Services"
+
+' Backend Integration
+detect_route --> detection_engine : "Image Processing Request"
+detection_engine --> ocr_processing : "Text Extraction"
+detection_engine --> roboflow_api : "Cloud Detection"
+ocr_processing --> response_formatting : "Results"
+response_formatting --> detect_route : "JSON Response"
+
+' Data Flow Notes
+note top of camera_capture
+  **Camera Capture Flow:**
+  1. Request camera permission
+  2. Display live video feed
+  3. Capture screenshot as base64
+  4. Convert to reliable Blob format
+  5. Create FormData with parameters
+  6. Send to API with error handling
+  7. Display results or fallback
+end note
+
+note top of file_upload
+  **File Upload Flow:**
+  1. File selection interface
+  2. Validate file type/size
+  3. Create FormData (same format)
+  4. Test both API endpoints
+  5. Display comprehensive debug info
+  6. Compare with camera capture
+end note
+
+note bottom of detect_route
+  **API Route Proxy:**
+  • Receives FormData from frontend
+  • Validates request format
+  • Forwards to FastAPI backend
+  • Handles success/error responses
+  • Maintains consistent interface
+end note
+
+note bottom of mobile_script
+  **Mobile Deployment:**
+  • Starts Next.js development server
+  • Creates ngrok tunnel for public access
+  • Validates FastAPI backend health
+  • Provides mobile-friendly URL
+  • Includes comprehensive logging
+end note
+
+' Technical Specifications
+note right of frontend
+  **Frontend Tech Stack:**
+  • Next.js 15 with App Router
+  • TypeScript for type safety
+  • Tailwind CSS for styling
+  • React Hooks for state
+  • PWA capabilities
+  • Mobile-first design
+end note
+
+note right of backend
+  **Backend Integration:**
+  • FastAPI with Swagger docs
+  • YOLOv8x.pt local model
+  • PaddleOCR text extraction
+  • Roboflow API support
+  • CPU-only mode
+  • 30-second timeouts
+end note
+
+@enduml

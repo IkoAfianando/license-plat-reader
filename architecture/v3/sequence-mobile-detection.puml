@@ -1,0 +1,149 @@
+@startuml Mobile License Plate Detection Flow v3
+!theme blueprint
+title Mobile Web App Detection Sequence - September 12, 2025
+
+actor "📱 Mobile User" as user
+participant "🌐 Ngrok Proxy" as ngrok
+participant "⚛️ Next.js Frontend" as nextjs
+participant "🔌 API Route\n/api/detect" as api_route
+participant "🚀 FastAPI Server" as fastapi
+participant "🔥 YOLO Detector" as yolo
+participant "📝 PaddleOCR" as ocr
+
+== Camera Capture Flow ==
+
+user -> ngrok : Open https://xxxx.ngrok-free.app
+activate ngrok
+ngrok -> nextjs : Forward to localhost:3000
+activate nextjs
+
+nextjs --> user : Serve PWA interface
+note right : Tab navigation: Camera | Upload
+
+user -> nextjs : Grant camera permission
+nextjs --> user : Camera preview active
+
+user -> nextjs : Click "📸 Capture"
+activate user
+
+nextjs -> nextjs : webcamRef.getScreenshot()
+note right : Returns base64 data URL
+
+nextjs -> nextjs : Convert base64 to Blob
+note right
+  **New Reliable Method:**
+  • Extract base64 data
+  • Convert to binary string
+  • Create Uint8Array  
+  • Generate Blob with JPEG type
+end note
+
+nextjs -> nextjs : Create FormData
+note right
+  **FormData Contents:**
+  • file: blob (capture.jpg)
+  • confidence: "0.5"
+  • use_roboflow: "false" | "true"
+  • extract_text: "true"
+  • return_image: "false"
+end note
+
+nextjs -> api_route : POST FormData
+activate api_route
+note right : Primary endpoint: /api/detect
+
+api_route -> api_route : Validate FormData
+note right
+  **Debug Logging:**
+  • File size, type validation
+  • All form parameters logged
+end note
+
+api_route -> fastapi : Forward to localhost:8000/detect/image
+activate fastapi
+note right : Proxy request with same FormData
+
+== Detection Processing ==
+
+fastapi -> fastapi : Parse multipart form
+note right : Extract file + parameters
+
+alt YOLO Local Mode
+    fastapi -> yolo : Process image with YOLOv8x.pt
+    activate yolo
+    yolo --> fastapi : Bounding boxes + confidence
+    deactivate yolo
+else Roboflow API Mode
+    fastapi -> "☁️ Roboflow API" : Send image to cloud
+    "☁️ Roboflow API" --> fastapi : Detection results
+end
+
+fastapi -> ocr : Extract text from detected regions
+activate ocr
+note right : PaddleOCR processing
+ocr --> fastapi : License plate text
+deactivate ocr
+
+== Response Flow ==
+
+fastapi -> fastapi : Format response
+note right
+  **Response JSON:**
+  • success: true
+  • detections: [bbox, confidence, text]
+  • processing_time: 1.5s
+  • image_size: [width, height]
+  • model_info: {detector, ocr_engine}
+end note
+
+fastapi --> api_route : Return detection results
+deactivate fastapi
+
+api_route --> nextjs : Forward JSON response
+deactivate api_route
+
+nextjs -> nextjs : Update UI state
+note right
+  **Update Components:**
+  • setResults(response)
+  • setIsLoading(false)  
+  • setError(null)
+end note
+
+nextjs --> user : Display results
+deactivate user
+note right
+  **Results Display:**
+  • ✅ Detection success
+  • 📊 Processing time
+  • 🔍 Found license plates
+  • 📝 OCR extracted text
+  • 📏 Confidence scores
+end note
+
+deactivate nextjs
+deactivate ngrok
+
+== Error Handling & Fallback ==
+
+note across
+  **Comprehensive Error Handling:**
+  If Next.js API fails → Automatic fallback to direct FastAPI
+  If detection fails → Detailed error with suggestions  
+  If network fails → Retry mechanism with user feedback
+  All errors logged with full debugging information
+end note
+
+== Live CCTV Mode ==
+
+note across
+  **Continuous Detection (Every 2 seconds):**
+  Same flow but with:
+  • isLiveCapture: true parameter
+  • Background processing (non-blocking UI)
+  • Results stored in live feed array
+  • Memory optimization (keep last 10 results)
+  • Silent error handling (no user alerts)
+end note
+
+@enduml
