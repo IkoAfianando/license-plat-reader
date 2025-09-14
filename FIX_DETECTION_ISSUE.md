@@ -111,6 +111,6 @@ curl -X POST http://localhost:8000/detect/batch \
 - **CPU Mode**: Slower than GPU but more compatible  
 - **YOLO Model**: Using YOLOv8n (will download automatically)  
 - **Plate Filtering**: Smart filtering with aspect ratio + position heuristics  
-- **OCR Engine**: PaddleOCR (some compatibility issues dengan latest version)  
+- **OCR Engine**: PaddleOCR (some compatibility issues with the latest version)  
 
 **API is now working normally for license plate detection! 🎉**

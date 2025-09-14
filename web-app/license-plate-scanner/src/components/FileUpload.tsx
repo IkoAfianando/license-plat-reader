@@ -18,6 +18,7 @@ interface DetectionResponse {
     ocr_engine?: string;
   };
   message?: string;
+  annotated_image?: string;
 }
 
 export default function FileUpload() {
@@ -65,7 +66,7 @@ export default function FileUpload() {
       formData.append('confidence', '0.5');
       formData.append('use_roboflow', selectedModel === 'roboflow' ? 'true' : 'false');
       formData.append('extract_text', 'true');
-      formData.append('return_image', 'false');
+      formData.append('return_image', 'true');
 
       debugLog.push('\n📦 FormData prepared:');
       for (const [key, value] of formData.entries()) {
@@ -292,6 +293,20 @@ export default function FileUpload() {
             )}
           </div>
           
+          {/* Display annotated image if available */}
+          {results.annotated_image && (
+            <div className="mt-4">
+              <h4 className="font-medium text-green-800 mb-2">Annotated Image with Detections:</h4>
+              <div className="border rounded-lg overflow-hidden">
+                <img 
+                  src={results.annotated_image} 
+                  alt="Annotated detection results"
+                  className="w-full max-w-2xl mx-auto block"
+                />
+              </div>
+            </div>
+          )}
+
           {results.detections.length > 0 && (
             <div className="mt-3">
               <h4 className="font-medium text-green-800">Detected License Plates:</h4>

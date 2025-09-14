@@ -103,3 +103,6 @@ wandb/
 *.swo
 
 yolov8x.pt
+
+dataset_yolo/
+mini_dataset/

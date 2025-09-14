@@ -319,13 +319,13 @@ curl http://localhost:8000/metrics
 
 3. **Roboflow API Error**
    ```bash
-   # Check API key di .env file
+   # Check API key in the .env file
    echo $ROBOFLOW_API_KEY
    ```
 
 4. **Port Already Used**
    ```bash
-   # Change port di .env atau command line
+   # Change port in the .env file or via command line
    API_PORT=8001 python -m src.api.main
    ```
 

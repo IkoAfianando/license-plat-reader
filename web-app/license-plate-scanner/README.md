@@ -29,7 +29,7 @@ A mobile-friendly Next.js web application for scanning license plates using your
 pnpm install
 ```
 
-## 🚀 CARA SUPER MUDAH - SATU PERINTAH SAJA!
+## 🚀 SUPER EASY METHOD - ONE COMMAND ONLY!
 
 ### 1. Start FastAPI Server (terminal 1):
 ```bash
@@ -37,13 +37,13 @@ cd ../..
 PYTHONPATH=. uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 ```
 
-### 2. Start Website Mobile (terminal 2):
+### 2. Start Mobile Website (terminal 2):
 ```bash
 cd license-plate-scanner
 ./start-mobile.sh
 ```
 
-**SELESAI!** Script akan memberikan **NGROK URL** yang bisa dibuka di handphone dari mana saja!
+DONE! The script will print an NGROK URL that you can open on your phone from anywhere!
 
 ### Alternative Scripts:
 - `./start.sh` - Local network access  
@@ -51,7 +51,7 @@ cd license-plate-scanner
 
 ---
 
-### Alternative Methods (jika butuh kontrol lebih)
+### Alternative Methods (if you need more control)
 
 **Method 2 - Manual ngrok:**
 ```bash
@@ -70,27 +70,27 @@ pnpm dev
 
 ## Usage on Mobile Phone
 
-1. **Pastikan FastAPI server berjalan** di komputer/server Anda
-2. **Jalankan script start**:
+1. Ensure the FastAPI server is running on your machine/server
+2. Run the start script:
    ```bash
    ./start.sh
    ```
-3. **Buka URL** yang diberikan di browser handphone Anda
-4. **Berikan izin akses kamera** ketika diminta
-5. **Pilih model deteksi**:
-   - **YOLO Local**: Menggunakan model YOLOv8 lokal Anda
-   - **Roboflow API**: Menggunakan Roboflow cloud service
+3. Open the provided URL in your phone's browser
+4. Grant camera access when prompted
+5. Choose the detection model:
+   - YOLO Local: Uses your local YOLOv8 model
+   - Roboflow API: Uses the Roboflow cloud service
 
 ### 📸 Single Capture Mode
-6. **Arahkan kamera ke plat nomor** dan tekan "📸 Capture & Scan"
-7. **Lihat hasil deteksi** termasuk teks plat nomor dan confidence score
+6. Point the camera at a license plate and press "📸 Capture & Scan"
+7. View detection results including plate text and confidence score
 
 ### 📹 CCTV Live Mode (NEW!)
-6. **Tekan tombol "📹 Start CCTV Mode"** untuk mulai monitoring
-7. **Kamera akan otomatis scan** setiap 2 detik
-8. **Semua plat nomor yang terdeteksi** akan muncul di live feed
-9. **History detection** tersimpan sampai Anda clear atau stop
-10. **Tekan "🔴 Stop CCTV Mode"** untuk berhenti
+6. Press the "📹 Start CCTV Mode" button to start monitoring
+7. The camera will automatically scan every 2 seconds
+8. All detected license plates will appear in the live feed
+9. Detection history is kept until you clear it or stop
+10. Press "🔴 Stop CCTV Mode" to stop
 
 ## Configuration
 

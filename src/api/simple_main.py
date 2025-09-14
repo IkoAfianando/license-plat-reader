@@ -27,11 +27,21 @@ try:
     import cv2
     import numpy as np
     from PIL import Image
+    import base64
     BASIC_DEPS_AVAILABLE = True
-    print("✅ Basic dependencies (OpenCV, PIL) loaded successfully")
+    print("✅ Basic dependencies (OpenCV, PIL, base64) loaded successfully")
 except ImportError as e:
     BASIC_DEPS_AVAILABLE = False
     print(f"❌ Basic dependencies missing: {e}")
+
+# Import visualization utility
+try:
+    from src.utils.visualization import draw_detections
+    VISUALIZATION_AVAILABLE = True
+    print("✅ Visualization utilities loaded")
+except ImportError as e:
+    VISUALIZATION_AVAILABLE = False
+    print(f"❌ Visualization utilities not available: {e}")
 
 class DetectionResponse(BaseModel):
     """Response model for detection"""
@@ -39,8 +49,9 @@ class DetectionResponse(BaseModel):
     detections: List[Dict[str, Any]]
     processing_time: float
     image_size: List[int]
-    model_info: Dict[str, str]
+    model_info: Dict[str, Any]  # Changed from Dict[str, str] to Dict[str, Any]
     message: Optional[str] = None
+    annotated_image: Optional[str] = None  # Base64 encoded image
 
 class HealthResponse(BaseModel):
     """Health check response"""
@@ -67,48 +78,116 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mock detector for testing
-class MockDetector:
-    """Mock detector for testing API without actual model"""
+# Import pre-trained detector
+try:
+    from src.core.pretrained_detector import PretrainedLicensePlateDetector, get_available_models
+    PRETRAINED_AVAILABLE = True
+    print("✅ Pre-trained detector available")
+except ImportError as e:
+    PRETRAINED_AVAILABLE = False
+    print(f"❌ Pre-trained detector not available: {e}")
+
+# Smart detector that uses best available option
+class SmartLicensePlateDetector:
+    """Smart detector that uses the best available pre-trained model"""
     
-    def __init__(self):
+    def __init__(self, preferred_model='yolov8_general'):
+        self.detector = None
+        self.model_info = {}
+        
+        if PRETRAINED_AVAILABLE:
+            try:
+                self.detector = PretrainedLicensePlateDetector(preferred_model, confidence=0.25)
+                self.model_info = self.detector.get_model_info()
+                self.model_info['type'] = 'pretrained_detector'
+                print(f"✅ Using pre-trained model: {preferred_model}")
+            except Exception as e:
+                print(f"⚠️ Pre-trained model failed, using mock: {e}")
+                self._use_mock_detector()
+        else:
+            self._use_mock_detector()
+    
+    def _use_mock_detector(self):
+        """Fallback to mock detector"""
+        self.detector = None
         self.model_info = {
             'type': 'mock_detector',
-            'loaded': 'true',
-            'note': 'This is a mock detector for API testing'
+            'name': 'Mock License Plate Detector',
+            'description': 'Fallback mock detector for testing',
+            'confidence_threshold': 0.3,
+            'note': 'Using mock detector - install ultralytics for real detection'
         }
     
     def detect(self, image: np.ndarray) -> List[Dict]:
-        """Mock detection that returns sample results"""
+        """Detect license plates using best available method"""
+        if self.detector:
+            # Use real pre-trained detector
+            return self.detector.detect(image)
+        else:
+            # Use mock detector
+            return self._mock_detect(image)
+    
+    def _mock_detect(self, image: np.ndarray) -> List[Dict]:
+        """Mock detection for fallback"""
         h, w = image.shape[:2]
         
-        # Sample detections (mock)
-        mock_detections = [
-            {
-                'bbox': [w*0.2, h*0.6, w*0.5, h*0.8],  # [x1, y1, x2, y2]
-                'confidence': 0.85,
+        # More realistic mock detections
+        detections = []
+        
+        # Simulate finding 1-2 license plates
+        import random
+        num_plates = random.choice([1, 1, 2])  # Usually 1 plate, sometimes 2
+        
+        for i in range(num_plates):
+            # Random but realistic positions (bottom half of image)
+            x1 = random.uniform(0.1, 0.6) * w
+            y1 = random.uniform(0.6, 0.8) * h  
+            plate_width = random.uniform(0.15, 0.25) * w
+            plate_height = random.uniform(0.05, 0.08) * h
+            
+            x2 = min(w, x1 + plate_width)
+            y2 = min(h, y1 + plate_height)
+            
+            # Sample license plate texts
+            sample_texts = ['B1234ABC', 'D5678XYZ', 'AA123BB', 'L789MNO', 'R456DEF']
+            
+            detections.append({
+                'bbox': [x1, y1, x2, y2],
+                'confidence': random.uniform(0.7, 0.95),
                 'class': 'license_plate',
                 'source': 'mock_detector',
-                'text': 'B1234XYZ',
-                'text_confidence': 0.9
-            },
-            {
-                'bbox': [w*0.6, h*0.4, w*0.9, h*0.6],
-                'confidence': 0.72,
-                'class': 'license_plate', 
-                'source': 'mock_detector',
-                'text': 'D5678ABC',
-                'text_confidence': 0.87
-            }
-        ]
+                'text': random.choice(sample_texts),
+                'text_confidence': random.uniform(0.8, 0.95)
+            })
         
-        return mock_detections
+        return detections
     
     def get_model_info(self):
+        """Get model information"""
         return self.model_info
+    
+    def set_confidence(self, confidence: float):
+        """Set confidence threshold"""
+        if self.detector and hasattr(self.detector, 'set_confidence'):
+            self.detector.set_confidence(confidence)
+        # Update local info
+        self.model_info['confidence_threshold'] = confidence
 
-# Initialize mock detector
-detector = MockDetector()
+# Try to use specific license plate model, fallback to general if not available
+try:
+    # Use specific pre-trained license plate model
+    detector = SmartLicensePlateDetector('yolov8_license_plates')
+    print("✅ Using specific license plate detection model")
+except:
+    # Fallback to general model
+    detector = SmartLicensePlateDetector('yolov8_general')
+    print("⚠️ Using general model as fallback")
+
+def image_to_base64(image: np.ndarray) -> str:
+    """Convert OpenCV image to base64 string"""
+    _, buffer = cv2.imencode('.jpg', image)
+    image_base64 = base64.b64encode(buffer).decode('utf-8')
+    return f"data:image/jpeg;base64,{image_base64}"
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -174,14 +253,33 @@ async def detect_image(
         
         processing_time = time.time() - start_time
         
+        # Get model info and format for frontend compatibility
+        model_info = detector.get_model_info()
+        
         response_data = {
             "success": True,
             "detections": filtered_detections,
             "processing_time": processing_time,
             "image_size": [image.shape[1], image.shape[0]],  # width, height
-            "model_info": detector.get_model_info(),
-            "message": f"Mock detection completed. Found {len(filtered_detections)} plates."
+            "model_info": {
+                "detector": model_info.get('name', 'Pre-trained YOLO'),
+                "ocr_engine": "integrated",  # Pre-trained model has integrated text detection
+                **model_info  # Include all other model info
+            },
+            "message": f"Detection completed using {model_info.get('name', 'Pre-trained model')}. Found {len(filtered_detections)} license plates." if filtered_detections else f"No license plates detected. Using {model_info.get('name', 'Pre-trained model')}."
         }
+        
+        # Add annotated image if requested
+        if return_image and VISUALIZATION_AVAILABLE and filtered_detections:
+            try:
+                annotated_image = draw_detections(image, filtered_detections, color=(0, 255, 0))
+                response_data["annotated_image"] = image_to_base64(annotated_image)
+            except Exception as e:
+                response_data["message"] += f" (Note: Could not generate annotated image: {e})"
+        elif return_image and not VISUALIZATION_AVAILABLE:
+            response_data["message"] += " (Note: Visualization utilities not available for image annotation)"
+        elif return_image and not filtered_detections:
+            response_data["message"] += " (Note: No detections to annotate)"
         
         return DetectionResponse(**response_data)
         
@@ -260,22 +358,59 @@ async def detect_batch(
 @app.get("/config")
 async def get_config():
     """Get current system configuration"""
+    model_info = detector.get_model_info()
     return {
         "detection": {
-            "confidence_threshold": 0.5,
+            "confidence_threshold": model_info.get('confidence_threshold', 0.3),
             "max_detections": 100,
-            "model_type": "mock"
+            "model_type": model_info.get('type', 'unknown'),
+            "model_name": model_info.get('name', 'Unknown Model'),
+            "model_description": model_info.get('description', 'No description')
         },
         "api": {
-            "version": "1.0.0-simple",
+            "version": "1.0.0-enhanced",
             "max_file_size": "10MB",
             "supported_formats": [".jpg", ".jpeg", ".png", ".bmp"]
         },
-        "roboflow": {
-            "enabled": False,
-            "note": "Using mock detector for testing"
+        "models": {
+            "current_model": model_info,
+            "pretrained_available": PRETRAINED_AVAILABLE
         }
     }
+
+@app.get("/models/available") 
+def list_available_models():
+    """Get list of available pre-trained models"""
+    if PRETRAINED_AVAILABLE:
+        try:
+            available_models = get_available_models()
+            return {
+                "success": True,
+                "models": available_models,
+                "current_model": detector.get_model_info()
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "models": {},
+                "current_model": detector.get_model_info()
+            }
+    else:
+        return {
+            "success": False,
+            "error": "Pre-trained models not available",
+            "models": {
+                "mock_detector": {
+                    "name": "Mock Detector",
+                    "description": "Fallback detector for testing",
+                    "recommended": True,
+                    "speed": "Fast",
+                    "accuracy": "Mock"
+                }
+            },
+            "current_model": detector.get_model_info()
+        }
 
 @app.get("/")
 async def root():

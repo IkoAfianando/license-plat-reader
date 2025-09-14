@@ -1,0 +1,8 @@
+classes:
+- license_plate
+confidence_threshold: 0.3
+dataset_size: 50
+model_path: /home/ikoafian/COMPANY/ieko-media/metabase-setup/research/license-plate-reader/models/license_plate_detector_quick.pt
+model_source: Quick Fine-tuned Model
+notes: Quick training version - suitable for testing and development
+training_method: Quick Fine-tuning

@@ -21,6 +21,7 @@ interface DetectionResponse {
     ocr_engine: string;
   };
   message?: string;
+  annotated_image?: string; // Base64 encoded annotated image
 }
 
 export default function CameraCapture() {
@@ -94,7 +95,7 @@ export default function CameraCapture() {
       formData.append('confidence', '0.5');
       formData.append('use_roboflow', selectedModel === 'roboflow' ? 'true' : 'false');
       formData.append('extract_text', 'true');
-      formData.append('return_image', 'false');
+      formData.append('return_image', 'true'); // Always return annotated image
       
       // Debug: Log form data contents
       console.log('📝 FormData prepared:');
@@ -329,17 +330,8 @@ export default function CameraCapture() {
             className="w-full max-h-96 object-cover"
           />
           
-          {/* Overlay for license plate frame and live mode indicator */}
+          {/* Live mode status indicator only */}
           <div className="absolute inset-0 pointer-events-none">
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="border-2 border-white border-dashed rounded-md w-64 h-16 flex items-center justify-center">
-                <span className="text-white text-sm opacity-75">
-                  {isLiveMode ? "🔴 LIVE SCANNING..." : "License Plate Area"}
-                </span>
-              </div>
-            </div>
-            
-            {/* Live mode status indicator */}
             {isLiveMode && (
               <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-md text-xs font-bold animate-pulse">
                 🔴 LIVE CCTV MODE
@@ -413,6 +405,20 @@ export default function CameraCapture() {
           <h3 className="text-sm font-medium text-green-800 dark:text-green-200 mb-3">
             Detection Results
           </h3>
+
+          {/* Display annotated image if available */}
+          {results.annotated_image && (
+            <div className="mb-4">
+              <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">Captured Image with Detections:</h4>
+              <div className="border rounded-lg overflow-hidden">
+                <img 
+                  src={results.annotated_image} 
+                  alt="Captured frame with license plate detections"
+                  className="w-full max-w-2xl mx-auto block"
+                />
+              </div>
+            </div>
+          )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
